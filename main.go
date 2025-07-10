@@ -632,6 +632,21 @@ func signWithVault(vaultURL, vaultToken, uuid, path, payloadHex string) (string,
 }
 
 func writeEnvFile(sourceAddress, mnemonic string) error {
-	envContent := fmt.Sprintf("SOURCE_ADDRESS=%s\nMNEMONIC=%s\n", sourceAddress, mnemonic)
-	return os.WriteFile(".env", []byte(envContent), 0600)
+	envMap, err := godotenv.Read()
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("reading .env file: %w", err)
+	}
+	if envMap == nil {
+		envMap = make(map[string]string)
+	}
+	envMap["SOURCE_ADDRESS"] = sourceAddress
+	envMap["MNEMONIC"] = mnemonic
+
+	var envContent strings.Builder
+	for key, value := range envMap {
+		if value != "" {
+			envContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		}
+	}
+	return os.WriteFile(".env", []byte(envContent.String()), 0600)
 }
